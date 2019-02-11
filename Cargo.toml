@@ -1,0 +1,16 @@
+[package]
+name = "instrumented-stepanov"
+version = "0.1.0"
+authors = ["Strahinja Popovic <stralep@gmail.com>"]
+edition = "2018"
+
+description = """
+InstrumentedBase is collecting data about number of new, clone, drop, eq, partial cmp and cmp from Instrumented instates.
+"""
+
+readme = "README.md"
+repository = "https://github.com/letac/instrumented-stepanov"
+license = "Apache-2.0"
+
+[dependencies]
+rand = {version = "0.6.*"}
