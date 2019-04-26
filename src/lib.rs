@@ -1,3 +1,5 @@
+use prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR;
+use prettytable::{Cell, Row, Table};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -22,16 +24,20 @@ impl InstrumentedBase {
     pub fn set(&mut self, c: [usize; InstrumentedBase::COLUMNS]) {
         self.counts = c;
     }
+
+    pub fn get(&self) -> [usize; InstrumentedBase::COLUMNS] {
+        self.counts
+    }
 }
 impl std::fmt::Debug for InstrumentedBase {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        for i in &self.counts {
-            write!(f, "{:>12}", i)?
-        }
-        Ok(())
+        let name = InstrumentedBase::counts_names();
+        let n: Vec<_> = name.iter().zip(self.counts.iter()).collect();
+        n.fmt(f)
     }
 }
 
+#[derive(Eq)]
 pub struct Instrumented<T> {
     value: T,
     base: Rc<RefCell<InstrumentedBase>>,
@@ -86,9 +92,6 @@ where
     }
 }
 
-/// Regular
-impl<T> Eq for Instrumented<T> where T: Eq {}
-
 /// Totally-ordered
 impl<T> PartialOrd for Instrumented<T>
 where
@@ -115,13 +118,26 @@ pub fn count_operations<F>(mut i: usize, j: usize, f: F)
 where
     F: Fn(&mut [Instrumented<u64>]),
 {
-    while i < j {
+    let mut table = Table::new();
+    table.set_format(*FORMAT_NO_BORDER_LINE_SEPARATOR);
+    let hader = InstrumentedBase::counts_names()
+        .iter()
+        .map(|x| Cell::new(x))
+        .collect();
+    table.set_titles(Row::new(hader));
+    while i <= j {
         let vec = rand_vec(i);
 
-        one_count_operations(vec, &f);
+        let c = one_count_operations(vec, &f)
+            .get()
+            .iter()
+            .map(|x| Cell::new(&x.to_string()))
+            .collect();
+        table.add_row(Row::new(c));
 
         i <<= 1;
     }
+    table.printstd();
 }
 
 fn rand_vec(i: usize) -> Vec<u64> {
@@ -136,18 +152,18 @@ fn rand_vec(i: usize) -> Vec<u64> {
     vec
 }
 
-pub fn one_count_operations<F>(vec: Vec<u64>, f: F) -> InstrumentedBase
+pub fn one_count_operations<T, F>(vec: Vec<T>, f: F) -> InstrumentedBase
 where
-    F: Fn(&mut [Instrumented<u64>]),
+    F: Fn(&mut [Instrumented<T>]),
 {
     let base = Rc::new(RefCell::new(Default::default()));
-    let mut vec: Vec<Instrumented<u64>> = vec
-        .iter()
-        .map(|x| Instrumented::new(*x, base.clone()))
+    let mut vec: Vec<Instrumented<T>> = vec
+        .into_iter()
+        .map(|x| Instrumented::new(x, base.clone()))
         .collect();
     f(&mut vec);
-    let base2 = (*base).clone();
-    let base3 = base2.borrow().clone();
+    let base2: RefCell<InstrumentedBase> = (*base).clone();
+    let base3: InstrumentedBase = *base2.borrow();
     base3
 }
 
@@ -173,5 +189,10 @@ mod tests {
         let mut def: InstrumentedBase = Default::default();
         def.set([4, 0, 0, 0, 6, 0]);
         assert_eq!(def, one);
+    }
+    #[test]
+    fn print() {
+        let n = one_count_operations::<u64, _>(vec![], |_x| ());
+        assert_eq!("[(\"new\", 0), (\"clone\", 0), (\"drop\", 0), (\"eq\", 0), (\"partial_cmp\", 0), (\"cmp\", 0)]", format!("{:?}", n));
     }
 }

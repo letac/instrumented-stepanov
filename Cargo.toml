@@ -1,6 +1,6 @@
 [package]
 name = "instrumented-stepanov"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Strahinja Popovic <stralep@gmail.com>"]
 edition = "2018"
 
@@ -17,3 +17,4 @@ name = "instrumented"
 
 [dependencies]
 rand = {version = "0.6.*"}
+prettytable-rs = "0.8.0"
