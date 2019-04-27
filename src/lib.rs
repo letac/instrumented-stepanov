@@ -114,7 +114,7 @@ where
     }
 }
 
-pub fn count_operations<F>(mut i: usize, j: usize, f: F)
+pub fn table_count_operations<F>(mut i: usize, j: usize, f: F)
 where
     F: Fn(&mut [Instrumented<u64>]),
 {
@@ -128,7 +128,7 @@ where
     while i <= j {
         let vec = rand_vec(i);
 
-        let c = one_count_operations(vec, &f)
+        let c = count_operations(vec, &f)
             .get()
             .iter()
             .map(|x| Cell::new(&x.to_string()))
@@ -152,7 +152,7 @@ fn rand_vec(i: usize) -> Vec<u64> {
     vec
 }
 
-pub fn one_count_operations<T, F>(vec: Vec<T>, f: F) -> InstrumentedBase
+pub fn count_operations<T, F>(vec: Vec<T>, f: F) -> InstrumentedBase
 where
     F: Fn(&mut [Instrumented<T>]),
 {
@@ -169,14 +169,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::one_count_operations;
+    use super::count_operations;
     use super::InstrumentedBase;
     use std::default::Default;
     #[test]
     fn it_sort1() {
         let mut vec = Vec::new();
         (0..4).for_each(|k| vec.push(k));
-        let one = one_count_operations(vec, |x| x.sort());
+        let one = count_operations(vec, |x| x.sort());
         let mut def: InstrumentedBase = Default::default();
         def.set([4, 0, 0, 0, 3, 0]);
         assert_eq!(def, one);
@@ -185,14 +185,14 @@ mod tests {
     fn it_sort2() {
         let mut vec = Vec::new();
         (0..4).for_each(|k| vec.push(3 - k));
-        let one = one_count_operations(vec, |x| x.sort());
+        let one = count_operations(vec, |x| x.sort());
         let mut def: InstrumentedBase = Default::default();
         def.set([4, 0, 0, 0, 6, 0]);
         assert_eq!(def, one);
     }
     #[test]
     fn print() {
-        let n = one_count_operations::<u64, _>(vec![], |_x| ());
+        let n = count_operations::<u64, _>(vec![], |_x| ());
         assert_eq!("[(\"new\", 0), (\"clone\", 0), (\"drop\", 0), (\"eq\", 0), (\"partial_cmp\", 0), (\"cmp\", 0)]", format!("{:?}", n));
     }
 }
