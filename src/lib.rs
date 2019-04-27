@@ -1,6 +1,7 @@
 use prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR;
 use prettytable::{Cell, Row, Table};
 use std::cell::RefCell;
+use std::ops::Range;
 use std::rc::Rc;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
@@ -116,7 +117,7 @@ where
 
 pub fn table_count_operations<F>(mut i: usize, j: usize, f: F)
 where
-    F: Fn(&mut [Instrumented<u64>]),
+    F: Fn(&mut [Instrumented<usize>]),
 {
     let mut table = Table::new();
     table.set_format(*FORMAT_NO_BORDER_LINE_SEPARATOR);
@@ -126,7 +127,7 @@ where
         .collect();
     table.set_titles(Row::new(hader));
     while i <= j {
-        let vec = rand_vec(i);
+        let vec = rand_vec(0..i);
 
         let c = count_operations(vec, &f)
             .get()
@@ -140,13 +141,14 @@ where
     table.printstd();
 }
 
-fn rand_vec(i: usize) -> Vec<u64> {
+fn rand_vec<T>(r: Range<T>) -> Vec<T>
+where
+    Range<T>: Iterator<Item = T>,
+{
     use rand::seq::SliceRandom;
     use rand::thread_rng;
     let mut rnd = thread_rng();
-    let mut vec: Vec<u64> = vec![];
-    vec.reserve(i);
-    (0..i).for_each(|k| vec.push(k as u64));
+    let mut vec: Vec<T> = r.collect();
     vec.shuffle(&mut rnd);
 
     vec
